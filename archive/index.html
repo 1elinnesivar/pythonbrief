@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archive - The Python Weekly Brief</title>
+    <meta name="description" content="Browse all issues of The Python Weekly Brief newsletter.">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Supabase -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <h2>🐍 Python Weekly Brief</h2>
+            </div>
+            <div class="nav-menu">
+                <div class="auth-buttons" id="auth-buttons">
+                    <button class="btn btn-outline" onclick="showAuthModal('login')">Sign In</button>
+                    <button class="btn btn-primary" onclick="showAuthModal('signup')">Sign Up</button>
+                </div>
+                <div class="user-info" id="user-info" style="display: none;">
+                    <!-- User info will be populated by auth.js -->
+                </div>
+                <div class="admin-links" id="admin-links" style="display: none;">
+                    <a href="/admin/" class="btn btn-outline">Admin Panel</a>
+                </div>
+                <a href="/dashboard.html" class="btn btn-outline">Dashboard</a>
+                <button class="btn btn-outline" id="sign-out-btn" onclick="signOut()" style="display: none;">Sign Out</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Archive Header -->
+    <section class="archive-header">
+        <div class="container">
+            <h1>📚 Issue Archive</h1>
+            <p>Browse all published issues of The Python Weekly Brief</p>
+            <div class="archive-actions">
+                <div class="search-filter">
+                    <input type="text" id="search-issues" placeholder="Search issues..." class="form-input">
+                    <select id="filter-year" class="form-select">
+                        <option value="all">All Years</option>
+                        <option value="2025">2025</option>
+                        <option value="2024">2024</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Access Control Notice -->
+    <section class="access-notice" id="access-notice" style="display: none;">
+        <div class="container">
+            <div class="notice-card">
+                <h3>🔒 Full Content Available to Premium Subscribers</h3>
+                <p>Upgrade to Premium to unlock the complete archive, full content, and downloadable resources.</p>
+                <div class="notice-actions">
+                    <button class="btn btn-primary" onclick="upgradeToPremium()">Upgrade to Premium - $9.99/month</button>
+                    <a href="/" class="btn btn-outline">View Latest Issue</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Issues Grid -->
+    <section class="issues-archive">
+        <div class="container">
+            <div class="archive-grid" id="archive-grid">
+                <div class="loading">Loading archive...</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pagination -->
+    <section class="archive-pagination">
+        <div class="container">
+            <div class="pagination-controls">
+                <button class="btn btn-outline" id="prev-page" disabled>Previous</button>
+                <span id="page-info">Page 1 of 1</span>
+                <button class="btn btn-outline" id="next-page" disabled>Next</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>🐍 Python Weekly Brief</h3>
+                    <p>Your weekly dose of Python development insights, delivered every Monday.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/dashboard.html">Dashboard</a></li>
+                        <li><a href="mailto:support@pythonbrief.com">Support</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 The Python Weekly Brief. All rights reserved.</p>
+                <p class="footer-note">Free users see only summaries. Premium: $9.99/month</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAuthModal()">&times;</span>
+            <div id="auth-content">
+                <!-- Auth content will be populated by auth.js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../supabase.js"></script>
+    <script src="../auth.js"></script>
+    <script src="../db.js"></script>
+    <script>
+        let currentPage = 1;
+        let issuesPerPage = 12;
+        let allIssues = [];
+        let filteredIssues = [];
+        let isUserPremium = false;
+        let currentUser = null;
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Check authentication status
+            const { data: { user } } = await supabase.auth.getUser();
+            
+            if (user) {
+                currentUser = user;
+                await loadUserData();
+                await checkPremiumStatus();
+            }
+
+            // Load archive
+            await loadArchive();
+
+            // Setup event listeners
+            document.getElementById('search-issues').addEventListener('input', filterIssues);
+            document.getElementById('filter-year').addEventListener('change', filterIssues);
+            document.getElementById('prev-page').addEventListener('click', () => changePage(-1));
+            document.getElementById('next-page').addEventListener('click', () => changePage(1));
+        });
+
+        async function loadUserData() {
+            if (currentUser) {
+                const userInfo = document.getElementById('user-info');
+                const authButtons = document.getElementById('auth-buttons');
+                const signOutBtn = document.getElementById('sign-out-btn');
+
+                userInfo.innerHTML = `
+                    <span class="user-email">${currentUser.email}</span>
+                    <div class="user-avatar">${currentUser.email.charAt(0).toUpperCase()}</div>
+                `;
+
+                userInfo.style.display = 'block';
+                authButtons.style.display = 'none';
+                signOutBtn.style.display = 'block';
+
+                // Check if user is admin
+                const { data: userData } = await supabase
+                    .from('users')
+                    .select('is_admin')
+                    .eq('id', currentUser.id)
+                    .single();
+
+                if (userData?.is_admin) {
+                    document.getElementById('admin-links').style.display = 'block';
+                }
+            }
+        }
+
+        async function checkPremiumStatus() {
+            if (!currentUser) return false;
+
+            try {
+                const { data: userData } = await supabase
+                    .from('users')
+                    .select('is_premium')
+                    .eq('id', currentUser.id)
+                    .single();
+
+                isUserPremium = userData?.is_premium || false;
+                return isUserPremium;
+            } catch (error) {
+                console.error('Error checking premium status:', error);
+                return false;
+            }
+        }
+
+        async function loadArchive() {
+            try {
+                const { data: issues, error } = await supabase
+                    .from('issues')
+                    .select('*')
+                    .not('published_at', 'is', null)
+                    .order('published_at', { ascending: false });
+
+                if (error) throw error;
+
+                allIssues = issues || [];
+                filteredIssues = [...allIssues];
+                displayIssues();
+                updatePagination();
+            } catch (error) {
+                console.error('Error loading archive:', error);
+                document.getElementById('archive-grid').innerHTML = `
+                    <div class="error">Error loading archive: ${error.message}</div>
+                `;
+            }
+        }
+
+        function filterIssues() {
+            const searchTerm = document.getElementById('search-issues').value.toLowerCase();
+            const yearFilter = document.getElementById('filter-year').value;
+
+            filteredIssues = allIssues.filter(issue => {
+                const matchesSearch = issue.title.toLowerCase().includes(searchTerm) || 
+                                   issue.short_summary.toLowerCase().includes(searchTerm);
+                const matchesYear = yearFilter === 'all' || 
+                                  new Date(issue.published_at).getFullYear().toString() === yearFilter;
+                
+                return matchesSearch && matchesYear;
+            });
+
+            // Reset to first page when filtering
+            currentPage = 1;
+            displayIssues();
+            updatePagination();
+        }
+
+        function displayIssues() {
+            const grid = document.getElementById('archive-grid');
+            const startIndex = (currentPage - 1) * issuesPerPage;
+            const endIndex = startIndex + issuesPerPage;
+            const pageIssues = filteredIssues.slice(startIndex, endIndex);
+
+            if (pageIssues.length === 0) {
+                grid.innerHTML = `
+                    <div class="no-issues">
+                        <h3>No issues found</h3>
+                        <p>Try adjusting your search criteria or filters.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Show/hide access notice based on user status
+            const accessNotice = document.getElementById('access-notice');
+            if (!currentUser) {
+                accessNotice.style.display = 'block';
+            } else if (!isUserPremium) {
+                accessNotice.style.display = 'block';
+            } else {
+                accessNotice.style.display = 'none';
+            }
+
+            grid.innerHTML = pageIssues.map(issue => `
+                <div class="issue-card archive-issue">
+                    <div class="issue-header">
+                        <h3>${issue.title}</h3>
+                        <span class="issue-date">${new Date(issue.published_at).toLocaleDateString()}</span>
+                    </div>
+                    
+                    <div class="issue-summary">
+                        <h4>Summary</h4>
+                        <div class="summary-content">
+                            ${issue.short_summary.split('\n').map(line => 
+                                line.trim() ? `<p>${line}</p>` : ''
+                            ).join('')}
+                        </div>
+                    </div>
+
+                    ${isUserPremium ? `
+                        <div class="issue-full-content">
+                            <h4>Full Content</h4>
+                            <div class="content-preview">
+                                ${issue.full_content.substring(0, 300)}${issue.full_content.length > 300 ? '...' : ''}
+                            </div>
+                            <a href="/archive/${issue.slug}" class="btn btn-outline">Read Full Issue</a>
+                        </div>
+                        
+                        ${issue.has_download ? `
+                            <div class="issue-download">
+                                <h4>📥 Downloadable Resource</h4>
+                                <a href="${issue.download_url}" class="btn btn-primary" target="_blank">
+                                    Download Resource
+                                </a>
+                            </div>
+                        ` : ''}
+                    ` : `
+                        <div class="issue-premium-lock">
+                            <div class="premium-lock-icon">🔒</div>
+                            <p>Full content and downloads available to Premium subscribers</p>
+                            <button class="btn btn-primary" onclick="upgradeToPremium()">
+                                Upgrade to Premium
+                            </button>
+                        </div>
+                    `}
+                    
+                    <div class="issue-footer">
+                        <span class="issue-slug">${issue.slug}</span>
+                        ${issue.has_download ? '<span class="download-badge">📥</span>' : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredIssues.length / issuesPerPage);
+            const prevBtn = document.getElementById('prev-page');
+            const nextBtn = document.getElementById('next-page');
+            const pageInfo = document.getElementById('page-info');
+
+            prevBtn.disabled = currentPage === 1;
+            nextBtn.disabled = currentPage === totalPages;
+            pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+        }
+
+        function changePage(delta) {
+            currentPage += delta;
+            displayIssues();
+            updatePagination();
+        }
+
+        function showAuthModal(type) {
+            // This will be implemented by auth.js
+            if (window.showAuthModal) {
+                window.showAuthModal(type);
+            }
+        }
+
+        function closeAuthModal() {
+            // This will be implemented by auth.js
+            if (window.closeAuthModal) {
+                window.closeAuthModal();
+            }
+        }
+
+        async function upgradeToPremium() {
+            if (!currentUser) {
+                showAuthModal('signup');
+                return;
+            }
+
+            // This will be implemented when Stripe is added
+            alert('Premium upgrade functionality will be available soon!');
+        }
+
+        async function signOut() {
+            await supabase.auth.signOut();
+            window.location.href = '/';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('auth-modal');
+            if (event.target === modal) {
+                closeAuthModal();
+            }
+        }
+    </script>
+</body>
+</html>

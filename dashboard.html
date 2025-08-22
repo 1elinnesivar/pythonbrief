@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - The Python Weekly Brief</title>
+    <meta name="description" content="Your personal dashboard for The Python Weekly Brief. Access your issues and manage your subscription.">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Supabase -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <h2>🐍 Python Weekly Brief</h2>
+            </div>
+            <div class="nav-menu">
+                <div class="user-info" id="user-info">
+                    <!-- User info will be populated by auth.js -->
+                </div>
+                <div class="admin-links" id="admin-links" style="display: none;">
+                    <a href="/admin/" class="btn btn-outline">Admin Panel</a>
+                </div>
+                <button class="btn btn-outline" onclick="signOut()">Sign Out</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Dashboard Header -->
+    <section class="dashboard-header">
+        <div class="container">
+            <div class="welcome-section">
+                <h1>Welcome to Your Dashboard</h1>
+                <div id="user-status" class="user-status">
+                    <!-- User status will be populated by auth.js -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Latest Issue Section -->
+    <section class="latest-issue-dashboard">
+        <div class="container">
+            <h2>📰 Latest Issue</h2>
+            <div class="issue-card" id="latest-issue-card">
+                <div class="loading">Loading...</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Premium Upgrade Section (for free users) -->
+    <section class="premium-upgrade" id="premium-upgrade" style="display: none;">
+        <div class="container">
+            <div class="upgrade-card">
+                <h3>🔒 Unlock Full Access</h3>
+                <p>Upgrade to Premium to access the complete archive, full content, and downloadable resources.</p>
+                <div class="upgrade-features">
+                    <ul>
+                        <li>✅ Full content of all issues</li>
+                        <li>✅ Complete archive access</li>
+                        <li>✅ Downloadable resources</li>
+                        <li>✅ Priority support</li>
+                    </ul>
+                </div>
+                <div class="upgrade-price">
+                    <span class="price">$9.99</span>
+                    <span class="period">/month</span>
+                </div>
+                <button class="btn btn-primary btn-large" onclick="upgradeToPremium()">Upgrade to Premium</button>
+                <p class="upgrade-note">Cancel anytime. No commitment required.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Full Content Section (for premium users) -->
+    <section class="full-content" id="full-content" style="display: none;">
+        <div class="container">
+            <h2>📖 Full Content</h2>
+            <div id="full-content-display">
+                <!-- Full content will be populated by db.js -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Archive Section (for premium users) -->
+    <section class="archive-section" id="archive-section" style="display: none;">
+        <div class="container">
+            <h2>📚 Issue Archive</h2>
+            <div class="archive-grid" id="archive-grid">
+                <!-- Archive will be populated by db.js -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Resources Section (for premium users) -->
+    <section class="resources-section" id="resources-section" style="display: none;">
+        <div class="container">
+            <h2>📥 Downloadable Resources</h2>
+            <div class="resources-grid" id="resources-grid">
+                <!-- Resources will be populated by db.js -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>🐍 Python Weekly Brief</h3>
+                    <p>Your weekly dose of Python development insights, delivered every Monday.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/archive/">Archive</a></li>
+                        <li><a href="mailto:support@pythonbrief.com">Support</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 The Python Weekly Brief. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="supabase.js"></script>
+    <script src="auth.js"></script>
+    <script src="db.js"></script>
+    <script>
+        // Dashboard specific logic
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Check authentication status
+            const { data: { user } } = await supabase.auth.getUser();
+            
+            if (!user) {
+                window.location.href = '/';
+                return;
+            }
+
+            // Load user data and update UI
+            await loadUserData();
+            await loadLatestIssue();
+            
+            // Load premium content if user is premium
+            if (await isUserPremium()) {
+                await loadPremiumContent();
+            } else {
+                showPremiumUpgrade();
+            }
+        });
+
+        async function loadUserData() {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const userInfo = document.getElementById('user-info');
+                userInfo.innerHTML = `
+                    <span class="user-email">${user.email}</span>
+                    <div class="user-avatar">${user.email.charAt(0).toUpperCase()}</div>
+                `;
+
+                // Check if user is admin
+                const { data: userData } = await supabase
+                    .from('users')
+                    .select('is_admin')
+                    .eq('id', user.id)
+                    .single();
+
+                if (userData?.is_admin) {
+                    document.getElementById('admin-links').style.display = 'block';
+                }
+            }
+        }
+
+        async function isUserPremium() {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return false;
+
+            const { data: userData } = await supabase
+                .from('users')
+                .select('is_premium')
+                .eq('id', user.id)
+                .single();
+
+            return userData?.is_premium || false;
+        }
+
+        function showPremiumUpgrade() {
+            document.getElementById('premium-upgrade').style.display = 'block';
+            document.getElementById('full-content').style.display = 'none';
+            document.getElementById('archive-section').style.display = 'none';
+            document.getElementById('resources-section').style.display = 'none';
+        }
+
+        async function loadPremiumContent() {
+            document.getElementById('premium-upgrade').style.display = 'none';
+            document.getElementById('full-content').style.display = 'block';
+            document.getElementById('archive-section').style.display = 'block';
+            document.getElementById('resources-section').style.display = 'block';
+
+            // Load full content, archive, and resources
+            await loadFullContent();
+            await loadArchive();
+            await loadResources();
+        }
+
+        async function loadFullContent() {
+            // This will be implemented in db.js
+            console.log('Loading full content...');
+        }
+
+        async function loadArchive() {
+            // This will be implemented in db.js
+            console.log('Loading archive...');
+        }
+
+        async function loadResources() {
+            // This will be implemented in db.js
+            console.log('Loading resources...');
+        }
+
+        async function upgradeToPremium() {
+            // This will be implemented when Stripe is added
+            alert('Premium upgrade functionality will be available soon!');
+        }
+
+        async function signOut() {
+            await supabase.auth.signOut();
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

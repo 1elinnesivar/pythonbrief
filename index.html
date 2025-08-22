@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Python Weekly Brief – Stay Updated as a Python Developer</title>
+    <meta name="description" content="Curated weekly newsletter for Python developers. Latest news, new libraries, remote jobs, and career tips. Free & Premium tiers available.">
+    <meta name="keywords" content="Python, newsletter, developer, programming, weekly, news, libraries, jobs, career">
+    <meta name="author" content="The Python Weekly Brief">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://pythonbrief.com">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://pythonbrief.com">
+    <meta property="og:title" content="The Python Weekly Brief – Stay Updated as a Python Developer">
+    <meta property="og:description" content="Curated weekly newsletter for Python developers. Latest news, new libraries, remote jobs, and career tips.">
+    <meta property="og:image" content="https://pythonbrief.com/og-image.jpg">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://pythonbrief.com">
+    <meta property="twitter:title" content="The Python Weekly Brief – Stay Updated as a Python Developer">
+    <meta property="twitter:description" content="Curated weekly newsletter for Python developers. Latest news, new libraries, remote jobs, and career tips.">
+    <meta property="twitter:image" content="https://pythonbrief.com/og-image.jpg">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    
+    <!-- Preconnect to external domains -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Supabase -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <h2>🐍 Python Weekly Brief</h2>
+            </div>
+            <div class="nav-menu">
+                <div class="auth-buttons">
+                    <button class="btn btn-outline" onclick="showAuthModal('login')">Sign In</button>
+                    <button class="btn btn-primary" onclick="showAuthModal('signup')">Sign Up</button>
+                </div>
+                <div class="user-info" style="display: none;">
+                    <!-- User info will be populated by auth.js -->
+                </div>
+                <div class="admin-links" style="display: none;">
+                    <a href="/admin/" class="btn btn-outline">Admin Panel</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <h1>The Python Weekly Brief</h1>
+            <p class="subtitle">Stay updated as a Python developer. Every Monday.</p>
+            <div class="hero-buttons">
+                <button class="btn btn-primary btn-large" onclick="showAuthModal('signup')">Get Free Access</button>
+                <button class="btn btn-outline btn-large" onclick="scrollToLatestIssue()">View Latest Issue</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Latest Issue Section -->
+    <section class="latest-issue" id="latest-issue">
+        <div class="container">
+            <h2>📰 Latest Issue</h2>
+            <div class="issue-card" id="latest-issue-card">
+                <div class="loading">Loading...</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits Section -->
+    <section class="benefits">
+        <div class="container">
+            <h2>Why Python Weekly Brief?</h2>
+            <div class="benefits-grid">
+                <div class="benefit-card">
+                    <div class="benefit-icon">📊</div>
+                    <h3>Latest News</h3>
+                    <p>Stay informed about the most recent developments, updates, and news in the Python ecosystem.</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-icon">🔧</div>
+                    <h3>New Libraries</h3>
+                    <p>Discover cutting-edge Python libraries and tools that can enhance your development workflow.</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-icon">💼</div>
+                    <h3>Remote Jobs</h3>
+                    <p>Find the best remote Python development opportunities from top companies worldwide.</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-icon">🚀</div>
+                    <h3>Career Tips</h3>
+                    <p>Get actionable advice to advance your Python development career and skills.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing">
+        <div class="container">
+            <h2>Choose Your Plan</h2>
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <h3>Free</h3>
+                    <div class="price">$0</div>
+                    <ul>
+                        <li>Short summary of latest issue</li>
+                        <li>Basic newsletter access</li>
+                        <li>Community updates</li>
+                    </ul>
+                    <button class="btn btn-outline" onclick="showAuthModal('signup')">Get Started</button>
+                </div>
+                <div class="pricing-card featured">
+                    <div class="featured-badge">Most Popular</div>
+                    <h3>Premium</h3>
+                    <div class="price">$9.99<span>/month</span></div>
+                    <ul>
+                        <li>Full content access</li>
+                        <li>Complete archive</li>
+                        <li>Downloadable resources</li>
+                        <li>Priority support</li>
+                    </ul>
+                    <button class="btn btn-primary" onclick="showAuthModal('signup')">Upgrade Now</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>🐍 Python Weekly Brief</h3>
+                    <p>Your weekly dose of Python development insights, delivered every Monday.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="#latest-issue">Latest Issue</a></li>
+                        <li><a href="/dashboard.html">Dashboard</a></li>
+                        <li><a href="/archive/">Archive</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Support</h4>
+                    <ul>
+                        <li><a href="mailto:support@pythonbrief.com">Contact Us</a></li>
+                        <li><a href="/privacy">Privacy Policy</a></li>
+                        <li><a href="/terms">Terms of Service</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 The Python Weekly Brief. All rights reserved.</p>
+                <p class="footer-note">Free users see only summaries. Premium: $9.99/month</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAuthModal()">&times;</span>
+            <div id="auth-content">
+                <!-- Auth content will be populated by auth.js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="supabase.js"></script>
+    <script src="auth.js"></script>
+    <script src="db.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

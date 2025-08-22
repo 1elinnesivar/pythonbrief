@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add/Edit Issue - The Python Weekly Brief</title>
+    <meta name="description" content="Add or edit newsletter issues for The Python Weekly Brief.">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Supabase -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <h2>🐍 Python Weekly Brief - Admin</h2>
+            </div>
+            <div class="nav-menu">
+                <div class="user-info" id="user-info">
+                    <!-- User info will be populated by auth.js -->
+                </div>
+                <a href="/admin/" class="btn btn-outline">Admin Panel</a>
+                <a href="/dashboard.html" class="btn btn-outline">Dashboard</a>
+                <button class="btn btn-outline" onclick="signOut()">Sign Out</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Form Header -->
+    <section class="form-header">
+        <div class="container">
+            <h1 id="form-title">Add New Issue</h1>
+            <p>Create a new newsletter issue with short summary and full content</p>
+            <div class="form-actions">
+                <button class="btn btn-outline" onclick="saveAsDraft()">Save as Draft</button>
+                <button class="btn btn-primary" onclick="publishIssue()">Publish Issue</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Issue Form -->
+    <section class="issue-form">
+        <div class="container">
+            <form id="issue-form" class="form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="issue-title">Issue Title *</label>
+                        <input type="text" id="issue-title" name="title" class="form-input" required 
+                               placeholder="e.g., Python Weekly Brief – June 10, 2025">
+                        <small>Use format: "Python Weekly Brief – [Date]"</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="issue-slug">URL Slug *</label>
+                        <input type="text" id="issue-slug" name="slug" class="form-input" required 
+                               placeholder="e.g., 2025-06-10">
+                        <small>URL-friendly version (e.g., 2025-06-10)</small>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="issue-summary">Short Summary *</label>
+                    <textarea id="issue-summary" name="short_summary" class="form-textarea" rows="6" required
+                              placeholder="Enter 5 bullet points (max 1 sentence each):
+• PyScript 2.0 launched – Run Python in the browser
+• Django 5.0 released with new features
+• New Python job opportunities in remote work
+• Career tip: Build a portfolio project
+• Community highlight: PyCon 2025 registration open"></textarea>
+                    <small>5 bullet points maximum, keep each under 1 sentence</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="issue-content">Full Content *</label>
+                    <textarea id="issue-content" name="full_content" class="form-textarea" rows="20" required
+                              placeholder="Enter the full newsletter content in markdown format:
+
+# Python Weekly Brief – [Date]
+
+## 🚀 Latest News
+[Your news content here]
+
+## 🔧 New Libraries
+[Library highlights]
+
+## 💼 Job Opportunities
+[Remote job listings]
+
+## 🎯 Career Tips
+[Career advice]
+
+## 🌟 Community Highlights
+[Community events and updates]"></textarea>
+                    <small>Supports markdown formatting. Use headers, lists, and links.</small>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="issue-date">Publish Date</label>
+                        <input type="date" id="issue-date" name="published_at" class="form-input">
+                        <small>Leave empty to publish immediately</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="issue-download">Downloadable Resource</label>
+                        <input type="url" id="issue-download" name="download_url" class="form-input"
+                               placeholder="https://example.com/resource.zip">
+                        <small>Optional: URL to downloadable resource (ZIP, PDF, etc.)</small>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="issue-has-download" name="has_download">
+                        <span class="checkmark"></span>
+                        This issue has a downloadable resource
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="issue-published" name="is_published">
+                        <span class="checkmark"></span>
+                        Publish immediately (uncheck to save as draft)
+                    </label>
+                </div>
+
+                <div class="form-actions-bottom">
+                    <button type="button" class="btn btn-outline" onclick="previewIssue()">Preview</button>
+                    <button type="button" class="btn btn-outline" onclick="saveAsDraft()">Save as Draft</button>
+                    <button type="button" class="btn btn-primary" onclick="publishIssue()">Publish Issue</button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- Preview Modal -->
+    <div id="preview-modal" class="modal">
+        <div class="modal-content preview-content">
+            <span class="close" onclick="closePreviewModal()">&times;</span>
+            <h2>Issue Preview</h2>
+            <div id="preview-content">
+                <!-- Preview content will be populated here -->
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-outline" onclick="closePreviewModal()">Close</button>
+                <button class="btn btn-primary" onclick="publishFromPreview()">Publish from Preview</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>🐍 Python Weekly Brief - Admin</h3>
+                    <p>Create and manage newsletter content efficiently.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Actions</h4>
+                    <ul>
+                        <li><a href="/admin/">Admin Panel</a></li>
+                        <li><a href="/admin/users.html">Manage Users</a></li>
+                        <li><a href="/dashboard.html">User Dashboard</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 The Python Weekly Brief. Admin Panel.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="../supabase.js"></script>
+    <script src="../auth.js"></script>
+    <script src="../db.js"></script>
+    <script>
+        let isEditMode = false;
+        let currentIssueId = null;
+        let formData = {};
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Check if user is admin
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                window.location.href = '/';
+                return;
+            }
+
+            // Check admin status
+            const { data: userData } = await supabase
+                .from('users')
+                .select('is_admin')
+                .eq('id', user.id)
+                .single();
+
+            if (!userData?.is_admin) {
+                window.location.href = '/dashboard.html';
+                return;
+            }
+
+            // Load admin data
+            await loadAdminData();
+
+            // Check if we're editing an existing issue
+            const urlParams = new URLSearchParams(window.location.search);
+            const issueId = urlParams.get('id');
+            
+            if (issueId) {
+                isEditMode = true;
+                currentIssueId = issueId;
+                await loadIssueForEdit(issueId);
+            }
+
+            // Setup form event listeners
+            setupFormListeners();
+        });
+
+        async function loadAdminData() {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const userInfo = document.getElementById('user-info');
+                userInfo.innerHTML = `
+                    <span class="user-email">${user.email}</span>
+                    <div class="user-avatar admin">👑</div>
+                `;
+            }
+        }
+
+        async function loadIssueForEdit(issueId) {
+            try {
+                const { data: issue, error } = await supabase
+                    .from('issues')
+                    .select('*')
+                    .eq('id', issueId)
+                    .single();
+
+                if (error) throw error;
+
+                // Populate form fields
+                document.getElementById('issue-title').value = issue.title || '';
+                document.getElementById('issue-slug').value = issue.slug || '';
+                document.getElementById('issue-summary').value = issue.short_summary || '';
+                document.getElementById('issue-content').value = issue.full_content || '';
+                document.getElementById('issue-date').value = issue.published_at ? 
+                    new Date(issue.published_at).toISOString().split('T')[0] : '';
+                document.getElementById('issue-download').value = issue.download_url || '';
+                document.getElementById('issue-has-download').checked = issue.has_download || false;
+                document.getElementById('issue-published').checked = !!issue.published_at;
+
+                // Update form title
+                document.getElementById('form-title').textContent = 'Edit Issue';
+                
+                // Update action buttons
+                const publishBtn = document.querySelector('button[onclick="publishIssue()"]');
+                publishBtn.textContent = 'Update Issue';
+                publishBtn.onclick = updateIssue;
+
+            } catch (error) {
+                console.error('Error loading issue:', error);
+                alert('Error loading issue: ' + error.message);
+            }
+        }
+
+        function setupFormListeners() {
+            // Auto-generate slug from title
+            document.getElementById('issue-title').addEventListener('input', function() {
+                const title = this.value;
+                const slug = title.toLowerCase()
+                    .replace(/[^a-z0-9\s-]/g, '')
+                    .replace(/\s+/g, '-')
+                    .replace(/-+/g, '-')
+                    .trim();
+                
+                if (slug) {
+                    document.getElementById('issue-slug').value = slug;
+                }
+            });
+
+            // Toggle download URL field based on checkbox
+            document.getElementById('issue-has-download').addEventListener('change', function() {
+                const downloadField = document.getElementById('issue-download');
+                downloadField.disabled = !this.checked;
+                if (!this.checked) {
+                    downloadField.value = '';
+                }
+            });
+
+            // Set initial state
+            document.getElementById('issue-download').disabled = !document.getElementById('issue-has-download').checked;
+        }
+
+        function collectFormData() {
+            const form = document.getElementById('issue-form');
+            const formData = new FormData(form);
+            
+            return {
+                title: formData.get('title'),
+                slug: formData.get('slug'),
+                short_summary: formData.get('short_summary'),
+                full_content: formData.get('full_content'),
+                published_at: formData.get('published_at') || new Date().toISOString(),
+                has_download: formData.get('has_download') === 'on',
+                download_url: formData.get('download_url') || null
+            };
+        }
+
+        function validateForm() {
+            const data = collectFormData();
+            
+            if (!data.title || !data.slug || !data.short_summary || !data.full_content) {
+                alert('Please fill in all required fields.');
+                return false;
+            }
+
+            if (data.has_download && !data.download_url) {
+                alert('Please provide a download URL if the issue has downloadable resources.');
+                return false;
+            }
+
+            return true;
+        }
+
+        async function saveAsDraft() {
+            if (!validateForm()) return;
+
+            const data = collectFormData();
+            data.published_at = null; // Save as draft
+
+            try {
+                if (isEditMode) {
+                    await updateIssueData(data);
+                } else {
+                    await createIssue(data);
+                }
+                
+                alert('Issue saved as draft successfully!');
+                window.location.href = '/admin/';
+            } catch (error) {
+                console.error('Error saving draft:', error);
+                alert('Error saving draft: ' + error.message);
+            }
+        }
+
+        async function publishIssue() {
+            if (!validateForm()) return;
+
+            const data = collectFormData();
+            data.published_at = new Date().toISOString();
+
+            try {
+                if (isEditMode) {
+                    await updateIssueData(data);
+                } else {
+                    await createIssue(data);
+                }
+                
+                alert('Issue published successfully!');
+                window.location.href = '/admin/';
+            } catch (error) {
+                console.error('Error publishing issue:', error);
+                alert('Error publishing issue: ' + error.message);
+            }
+        }
+
+        async function createIssue(data) {
+            const { error } = await supabase
+                .from('issues')
+                .insert([data]);
+
+            if (error) throw error;
+        }
+
+        async function updateIssueData(data) {
+            const { error } = await supabase
+                .from('issues')
+                .update(data)
+                .eq('id', currentIssueId);
+
+            if (error) throw error;
+        }
+
+        async function updateIssue() {
+            await publishIssue();
+        }
+
+        function previewIssue() {
+            if (!validateForm()) return;
+
+            const data = collectFormData();
+            const previewContent = document.getElementById('preview-content');
+            
+            previewContent.innerHTML = `
+                <div class="issue-preview">
+                    <h1>${data.title}</h1>
+                    <div class="preview-meta">
+                        <span class="preview-date">${new Date(data.published_at).toLocaleDateString()}</span>
+                        <span class="preview-slug">${data.slug}</span>
+                    </div>
+                    
+                    <div class="preview-summary">
+                        <h3>Short Summary</h3>
+                        <div class="summary-content">${data.short_summary.replace(/\n/g, '<br>')}</div>
+                    </div>
+                    
+                    <div class="preview-content">
+                        <h3>Full Content</h3>
+                        <div class="content-preview">${data.full_content.substring(0, 500)}${data.full_content.length > 500 ? '...' : ''}</div>
+                    </div>
+                    
+                    ${data.has_download ? `
+                        <div class="preview-download">
+                            <h3>Downloadable Resource</h3>
+                            <p>📥 <a href="${data.download_url}" target="_blank">${data.download_url}</a></p>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            document.getElementById('preview-modal').style.display = 'block';
+        }
+
+        function closePreviewModal() {
+            document.getElementById('preview-modal').style.display = 'none';
+        }
+
+        async function publishFromPreview() {
+            closePreviewModal();
+            await publishIssue();
+        }
+
+        async function signOut() {
+            await supabase.auth.signOut();
+            window.location.href = '/';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('preview-modal');
+            if (event.target === modal) {
+                closePreviewModal();
+            }
+        }
+    </script>
+</body>
+</html>
