@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # The Python Weekly Brief – Global SaaS Setup
 
 A secure, English-only newsletter platform with free/premium tiers, built for Python developers worldwide.
@@ -402,3 +403,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 **Built with ❤️ for the Python community**
 
 *The Python Weekly Brief - Stay updated as a Python developer. Every Monday.*
+=======
+# pythonbrief
+A weekly Python newsletter with free/premium access
+>>>>>>> b5ec41b2c4b6ead60efdda8421689d43b0f0211b
